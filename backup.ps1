@@ -44,7 +44,7 @@ if (Test-Path $listPath) {
         }
     }
 } else {
-    Write-Host "-> Warnung: 'blocked_apps.txt' nicht gefunden! Überspringe diese Liste." -ForegroundColor DarkYellow
+    Write-Host "-> Info: 'blocked_apps.txt' nicht gefunden (optional). Überspringe diese Liste." -ForegroundColor DarkYellow
 }
 
 
@@ -69,20 +69,20 @@ foreach ($app in $bloatApps) {
 Write-Host "-> Windows-Bloatware-Apps entfernt." -ForegroundColor Green
 
 
-# Das Windows-Äquivalent zum Löschen ungenutzter Sprachpakete/Komponenten (DISM Component Cleanup)
-Write-Host "3b. Bereinige Windows-Komponentenspeicher (entfernt alte Updates und Sprachpakete)..." -ForegroundColor Cyan
+Write-Host "3b. Bereinige Windows-Komponentenspeicher..." -ForegroundColor Cyan
 Dism.exe /online /Cleanup-Image /StartComponentCleanup /ResetBase
 
 
 Write-Host "4. Erstelle komprimiertes WIM-Image von C: auf dem USB-Stick..." -ForegroundColor Cyan
 
 $usbBackupPath = "$($usbLetter):\windows_backup.wim"
-dism /Capture-Image /ImageFile:$usbBackupPath /CaptureDir:C:\ /Name:"Windows abgespeckt Backup" /Compress:max /EA
+
+# WICHTIG: Mit /Overwrite überschreibt er eine eventuell alte, abgebrochene Datei sauber!
+dism /Capture-Image /ImageFile:$usbBackupPath /CaptureDir:C:\ /Name:"Windows abgespeckt Backup" /Compress:max /EA /Overwrite
 
 
 Write-Host "5. Führe Integritäts-Check des Backups durch..." -ForegroundColor Cyan
 
-# DISM prüft, ob die erstellte WIM-Datei auf dem Stick fehlerfrei und lesbar ist
 $verifyResult = dism /Verify-Image /ImageFile:$usbBackupPath /Index:1
 
 if ($LASTEXITCODE -eq 0) {
@@ -102,7 +102,7 @@ if ($LASTEXITCODE -eq 0) {
 
     Write-Host "Alles erledigt! Windows ist gesichert, geprüft und die SSD ist bereit für Linux." -ForegroundColor Cyan
 } else {
-    Write-Host "-> FEHLER: Das Backup weist Unstimmigkeiten auf! C: wird NICHT gelöscht, damit deine Daten sicher bleiben." -ForegroundColor Red
+    Write-Host "-> FEHLER: Das Backup weist Unstimmigkeiten auf! C: wird NICHT gelöscht." -ForegroundColor Red
 }
 
 Pause
