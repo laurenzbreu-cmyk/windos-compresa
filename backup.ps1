@@ -1,3 +1,7 @@
+param(
+    [string]$usbLetter = "D"
+)
+
 # Als Administrator ausführen!
 Set-Location $PSScriptRoot
 
@@ -69,22 +73,21 @@ Write-Host "3b. Bereinige Windows-Komponentenspeicher..." -ForegroundColor Cyan
 Dism.exe /online /Cleanup-Image /StartComponentCleanup /ResetBase
 
 
-Write-Host "4. Erstelle komprimiertes WIM-Image von C: auf dem Desktop..." -ForegroundColor Cyan
+Write-Host "4. Erstelle komprimiertes WIM-Image von C: auf dem USB-Stick..." -ForegroundColor Cyan
 
-$desktopPath = [Environment]::GetFolderPath("Desktop")
-$backupFilePath = Join-Path $desktopPath "windows_backup.wim"
+$usbBackupPath = "$($usbLetter):\windows_backup.wim"
 
-# Falls eine alte Datei auf dem Desktop liegt, vorab löschen
-if (Test-Path $backupFilePath) {
-    Remove-Item $backupFilePath -Force
-    Write-Host "-> Alte Backup-Datei auf dem Desktop entfernt." -ForegroundColor Yellow
+# Falls eine alte Datei auf dem Stick liegt, vorab löschen
+if (Test-Path $usbBackupPath) {
+    Remove-Item $usbBackupPath -Force
+    Write-Host "-> Alte Backup-Datei auf dem USB-Stick entfernt." -ForegroundColor Yellow
 }
 
-dism /Capture-Image /ImageFile:$backupFilePath /CaptureDir:C:\ /Name:"Windows abgespeckt Backup" /Compress:max /EA
+dism /Capture-Image /ImageFile:$usbBackupPath /CaptureDir:C:\ /Name:"Windows abgespeckt Backup" /Compress:max /EA
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "-> ERFOLG: Das Backup wurde fehlerfrei auf deinem Desktop erstellt!" -ForegroundColor Green
-    Write-Host "Die Datei 'windows_backup.wim' ist da. Es wurde absolut nichts gelöscht." -ForegroundColor Cyan
+    Write-Host "-> ERFOLG: Das Backup wurde fehlerfrei auf dem USB-Stick erstellt!" -ForegroundColor Green
+    Write-Host "Die Datei 'windows_backup.wim' ist sicher auf dem USB-Stick hinterlegt." -ForegroundColor Cyan
 } else {
     Write-Host "-> FEHLER beim Erstellen des Backups!" -ForegroundColor Red
 }
