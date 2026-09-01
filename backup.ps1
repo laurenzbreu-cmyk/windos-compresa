@@ -74,7 +74,13 @@ Write-Host "4. Erstelle komprimiertes WIM-Image von C: auf dem Desktop..." -Fore
 $desktopPath = [Environment]::GetFolderPath("Desktop")
 $backupFilePath = Join-Path $desktopPath "windows_backup.wim"
 
-dism /Capture-Image /ImageFile:$backupFilePath /CaptureDir:C:\ /Name:"Windows abgespeckt Backup" /Compress:max /EA /Overwrite
+# Falls eine alte Datei auf dem Desktop liegt, wird sie vorab sauber entfernt
+if (Test-Path $backupFilePath) {
+    Remove-Item $backupFilePath -Force
+    Write-Host "-> Alte Backup-Datei auf dem Desktop entfernt." -ForegroundColor Yellow
+}
+
+dism /Capture-Image /ImageFile:$backupFilePath /CaptureDir:C:\ /Name:"Windows abgespeckt Backup" /Compress:max /EA
 
 
 Write-Host "5. Führe Integritäts-Check des Backups durch..." -ForegroundColor Cyan
@@ -83,7 +89,7 @@ $verifyResult = dism /Verify-Image /ImageFile:$backupFilePath /Index:1
 
 if ($LASTEXITCODE -eq 0) {
     Write-Host "-> ERFOLG: Das Backup auf dem Desktop ist zu 100% intakt und fehlerfrei!" -ForegroundColor Green
-    Write-Host "Das Backup ist sicher. Es wurde nichts gelöscht – du hast die volle Kontrolle." -ForegroundColor Cyan
+    Write-Host "Das Backup ist sicher auf deinem Desktop hinterlegt. Es wurde nichts gelöscht." -ForegroundColor Cyan
 } else {
     Write-Host "-> FEHLER: Das Backup weist Unstimmigkeiten auf!" -ForegroundColor Red
 }
