@@ -74,13 +74,17 @@ Write-Host "4. Erstelle komprimiertes WIM-Image von C: auf dem Desktop..." -Fore
 $desktopPath = [Environment]::GetFolderPath("Desktop")
 $backupFilePath = Join-Path $desktopPath "windows_backup.wim"
 
-# Falls eine alte Datei auf dem Desktop liegt, wird sie vorab sauber entfernt
+# Falls eine alte Datei auf dem Desktop liegt, vorab löschen
 if (Test-Path $backupFilePath) {
     Remove-Item $backupFilePath -Force
     Write-Host "-> Alte Backup-Datei auf dem Desktop entfernt." -ForegroundColor Yellow
 }
 
 dism /Capture-Image /ImageFile:$backupFilePath /CaptureDir:C:\ /Name:"Windows abgespeckt Backup" /Compress:max /EA
+
+# WICHTIG: Kurze Pause, damit Windows die Datei nach dem Schreiben komplett freigibt
+Write-Host "Warte kurz, bis Windows die Datei freigibt..." -ForegroundColor DarkCyan
+Start-Sleep -Seconds 3
 
 
 Write-Host "5. Führe Integritäts-Check des Backups durch..." -ForegroundColor Cyan
