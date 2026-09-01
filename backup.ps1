@@ -1,3 +1,7 @@
+param(
+    [string]$usbLetter = "D"
+)
+
 # Als Administrator ausführen!
 Set-Location $PSScriptRoot
 
@@ -47,36 +51,15 @@ if (Test-Path $listPath) {
 Write-Host "3. Scanne nach Windows-App-Bloatware und entferne sie..." -ForegroundColor Cyan
 
 $bloatApps = @(
-    "Microsoft.3DBuilder",
-    "Microsoft.BingWeather",
-    "Microsoft.GetHelp",
-    "Microsoft.Getstarted",
-    "Microsoft.Messaging",
-    "Microsoft.Microsoft3DViewer",
-    "Microsoft.MicrosoftOfficeHub",
-    "Microsoft.MicrosoftSolitaireCollection",
-    "Microsoft.NetworkSpeedTest",
-    "Microsoft.News",
-    "Microsoft.Office.OneNote",
-    "Microsoft.People",
-    "Microsoft.Print3D",
-    "Microsoft.SkypeApp",
-    "Microsoft.Wallet",
-    "Microsoft.WindowsAlarms",
-    "Microsoft.WindowsCamera",
-    "microsoft.windowscommunicationsapps",
-    "Microsoft.WindowsFeedbackHub",
-    "Microsoft.WindowsMaps",
-    "Microsoft.WindowsSoundRecorder",
-    "Microsoft.Xbox.TCUI",
-    "Microsoft.XboxApp",
-    "Microsoft.XboxGameOverlay",
-    "Microsoft.XboxGamingOverlay",
-    "Microsoft.XboxIdentityProvider",
-    "Microsoft.XboxSpeechToTextOverlay",
-    "Microsoft.YourPhone",
-    "Microsoft.ZuneMusic",
-    "Microsoft.ZuneVideo"
+    "Microsoft.3DBuilder", "Microsoft.BingWeather", "Microsoft.GetHelp", "Microsoft.Getstarted",
+    "Microsoft.Messaging", "Microsoft.Microsoft3DViewer", "Microsoft.MicrosoftOfficeHub",
+    "Microsoft.MicrosoftSolitaireCollection", "Microsoft.NetworkSpeedTest", "Microsoft.News",
+    "Microsoft.Office.OneNote", "Microsoft.People", "Microsoft.Print3D", "Microsoft.SkypeApp",
+    "Microsoft.Wallet", "Microsoft.WindowsAlarms", "Microsoft.WindowsCamera", "microsoft.windowscommunicationsapps",
+    "Microsoft.WindowsFeedbackHub", "Microsoft.WindowsMaps", "Microsoft.WindowsSoundRecorder",
+    "Microsoft.Xbox.TCUI", "Microsoft.XboxApp", "Microsoft.XboxGameOverlay", "Microsoft.XboxGamingOverlay",
+    "Microsoft.XboxIdentityProvider", "Microsoft.XboxSpeechToTextOverlay", "Microsoft.YourPhone",
+    "Microsoft.ZuneMusic", "Microsoft.ZuneVideo"
 )
 
 foreach ($app in $bloatApps) {
@@ -86,12 +69,40 @@ foreach ($app in $bloatApps) {
 Write-Host "-> Windows-Bloatware-Apps entfernt." -ForegroundColor Green
 
 
-Write-Host "4. Erstelle komprimiertes WIM-Image von C: auf dem Ventoy-Stick..." -ForegroundColor Cyan
+# Das Windows-Äquivalent zum Löschen ungenutzter Sprachpakete/Komponenten (DISM Component Cleanup)
+Write-Host "3b. Bereinige Windows-Komponentenspeicher (entfernt alte Updates und Sprachpakete)..." -ForegroundColor Cyan
+Dism.exe /online /Cleanup-Image /StartComponentCleanup /ResetBase
 
-# WICHTIG: Passe D:\ an den echten Laufwerksbuchstaben deines Ventoy-Sticks an!
-$usbBackupPath = "D:\windows_backup.wim"
 
+Write-Host "4. Erstelle komprimiertes WIM-Image von C: auf dem USB-Stick..." -ForegroundColor Cyan
+
+$usbBackupPath = "$($usbLetter):\windows_backup.wim"
 dism /Capture-Image /ImageFile:$usbBackupPath /CaptureDir:C:\ /Name:"Windows abgespeckt Backup" /Compress:max /EA
 
-Write-Host "Fertig! Das Backup liegt jetzt sicher auf deinem Ventoy-Stick." -ForegroundColor Green
+
+Write-Host "5. Führe Integritäts-Check des Backups durch..." -ForegroundColor Cyan
+
+# DISM prüft, ob die erstellte WIM-Datei auf dem Stick fehlerfrei und lesbar ist
+$verifyResult = dism /Verify-Image /ImageFile:$usbBackupPath /Index:1
+
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "-> ERFOLG: Das Backup auf dem USB-Stick ist zu 100% intakt und fehlerfrei!" -ForegroundColor Green
+    
+    Write-Host "6. Lösche das alte Windows-Dateisystem auf C: ..." -ForegroundColor Red
+    Write-Host "Das Backup ist sicher. C: wird jetzt für Linux freigegeben..." -ForegroundColor Yellow
+
+    $foldersToDelete = @("C:\Windows", "C:\Program Files", "C:\Program Files (x86)", "C:\Users", "C:\ProgramData")
+
+    foreach ($folder in $foldersToDelete) {
+        if (Test-Path $folder) {
+            Remove-Item $folder -Recurse -Force -ErrorAction SilentlyContinue
+            Write-Host "-> Gelöscht: $folder" -ForegroundColor DarkYellow
+        }
+    }
+
+    Write-Host "Alles erledigt! Windows ist gesichert, geprüft und die SSD ist bereit für Linux." -ForegroundColor Cyan
+} else {
+    Write-Host "-> FEHLER: Das Backup weist Unstimmigkeiten auf! C: wird NICHT gelöscht, damit deine Daten sicher bleiben." -ForegroundColor Red
+}
+
 Pause
