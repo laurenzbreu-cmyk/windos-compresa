@@ -1,7 +1,3 @@
-param(
-    [string]$usbLetter = "D"
-)
-
 # Als Administrator ausführen!
 Set-Location $PSScriptRoot
 
@@ -73,36 +69,23 @@ Write-Host "3b. Bereinige Windows-Komponentenspeicher..." -ForegroundColor Cyan
 Dism.exe /online /Cleanup-Image /StartComponentCleanup /ResetBase
 
 
-Write-Host "4. Erstelle komprimiertes WIM-Image von C: auf dem USB-Stick..." -ForegroundColor Cyan
+Write-Host "4. Erstelle komprimiertes WIM-Image von C: auf dem Desktop..." -ForegroundColor Cyan
 
-$usbBackupPath = "$($usbLetter):\windows_backup.wim"
+$desktopPath = [Environment]::GetFolderPath("Desktop")
+$backupFilePath = Join-Path $desktopPath "windows_backup.wim"
 
-# WICHTIG: Mit /Overwrite überschreibt er eine eventuell alte, abgebrochene Datei sauber!
-dism /Capture-Image /ImageFile:$usbBackupPath /CaptureDir:C:\ /Name:"Windows abgespeckt Backup" /Compress:max /EA /Overwrite
+dism /Capture-Image /ImageFile:$backupFilePath /CaptureDir:C:\ /Name:"Windows abgespeckt Backup" /Compress:max /EA /Overwrite
 
 
 Write-Host "5. Führe Integritäts-Check des Backups durch..." -ForegroundColor Cyan
 
-$verifyResult = dism /Verify-Image /ImageFile:$usbBackupPath /Index:1
+$verifyResult = dism /Verify-Image /ImageFile:$backupFilePath /Index:1
 
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "-> ERFOLG: Das Backup auf dem USB-Stick ist zu 100% intakt und fehlerfrei!" -ForegroundColor Green
-    
-    Write-Host "6. Lösche das alte Windows-Dateisystem auf C: ..." -ForegroundColor Red
-    Write-Host "Das Backup ist sicher. C: wird jetzt für Linux freigegeben..." -ForegroundColor Yellow
-
-    $foldersToDelete = @("C:\Windows", "C:\Program Files", "C:\Program Files (x86)", "C:\Users", "C:\ProgramData")
-
-    foreach ($folder in $foldersToDelete) {
-        if (Test-Path $folder) {
-            Remove-Item $folder -Recurse -Force -ErrorAction SilentlyContinue
-            Write-Host "-> Gelöscht: $folder" -ForegroundColor DarkYellow
-        }
-    }
-
-    Write-Host "Alles erledigt! Windows ist gesichert, geprüft und die SSD ist bereit für Linux." -ForegroundColor Cyan
+    Write-Host "-> ERFOLG: Das Backup auf dem Desktop ist zu 100% intakt und fehlerfrei!" -ForegroundColor Green
+    Write-Host "Das Backup ist sicher. Es wurde nichts gelöscht – du hast die volle Kontrolle." -ForegroundColor Cyan
 } else {
-    Write-Host "-> FEHLER: Das Backup weist Unstimmigkeiten auf! C: wird NICHT gelöscht." -ForegroundColor Red
+    Write-Host "-> FEHLER: Das Backup weist Unstimmigkeiten auf!" -ForegroundColor Red
 }
 
 Pause
