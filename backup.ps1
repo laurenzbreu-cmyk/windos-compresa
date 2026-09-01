@@ -1,8 +1,7 @@
 # Als Administrator ausführen!
-# Stellt sicher, dass das Skript im selben Ordner ausgeführt wird wie die Textdatei
 Set-Location $PSScriptRoot
 
-Write-Host "1. Starte Bereinigung..." -ForegroundColor Cyan
+Write-Host "1. Starte grundlegende Bereinigung..." -ForegroundColor Cyan
 
 # Downloads-Ordner leeren
 $downloadsPath = "$env:USERPROFILE\Downloads"
@@ -20,8 +19,8 @@ Remove-Item "$env:TEMP\*" -Recurse -Force -ErrorAction SilentlyContinue
 Remove-Item "C:\Windows\Temp\*" -Recurse -Force -ErrorAction SilentlyContinue
 Write-Host "-> Temp-Ordner bereinigt." -ForegroundColor Green
 
-Write-Host "2. Lese Programmliste und deinstalliere Bloatware..." -ForegroundColor Cyan
 
+Write-Host "2. Lese Programmliste aus und deinstalliere Drittanbieter-Bloatware..." -ForegroundColor Cyan
 $listPath = ".\blocked_apps.txt"
 
 if (Test-Path $listPath) {
@@ -41,16 +40,58 @@ if (Test-Path $listPath) {
         }
     }
 } else {
-    Write-Host "-> Warnung: 'blocked_apps.txt' nicht gefunden! Überspringe Deinstallation." -ForegroundColor DarkYellow
+    Write-Host "-> Warnung: 'blocked_apps.txt' nicht gefunden! Überspringe diese Liste." -ForegroundColor DarkYellow
 }
 
-Write-Host "3. Erstelle komprimiertes WIM-Image von C: auf dem Ventoy-Stick..." -ForegroundColor Cyan
+
+Write-Host "3. Scanne nach Windows-App-Bloatware und entferne sie..." -ForegroundColor Cyan
+
+$bloatApps = @(
+    "Microsoft.3DBuilder",
+    "Microsoft.BingWeather",
+    "Microsoft.GetHelp",
+    "Microsoft.Getstarted",
+    "Microsoft.Messaging",
+    "Microsoft.Microsoft3DViewer",
+    "Microsoft.MicrosoftOfficeHub",
+    "Microsoft.MicrosoftSolitaireCollection",
+    "Microsoft.NetworkSpeedTest",
+    "Microsoft.News",
+    "Microsoft.Office.OneNote",
+    "Microsoft.People",
+    "Microsoft.Print3D",
+    "Microsoft.SkypeApp",
+    "Microsoft.Wallet",
+    "Microsoft.WindowsAlarms",
+    "Microsoft.WindowsCamera",
+    "microsoft.windowscommunicationsapps",
+    "Microsoft.WindowsFeedbackHub",
+    "Microsoft.WindowsMaps",
+    "Microsoft.WindowsSoundRecorder",
+    "Microsoft.Xbox.TCUI",
+    "Microsoft.XboxApp",
+    "Microsoft.XboxGameOverlay",
+    "Microsoft.XboxGamingOverlay",
+    "Microsoft.XboxIdentityProvider",
+    "Microsoft.XboxSpeechToTextOverlay",
+    "Microsoft.YourPhone",
+    "Microsoft.ZuneMusic",
+    "Microsoft.ZuneVideo"
+)
+
+foreach ($app in $bloatApps) {
+    Get-AppxPackage -AllUsers -Name $app | Remove-AppxPackage -ErrorAction SilentlyContinue
+    Get-AppxProvisionedPackage -Online | Where-Object {$_.DisplayName -eq $app} | Remove-ProvisionedAppxPackage -Online -ErrorAction SilentlyContinue
+}
+Write-Host "-> Windows-Bloatware-Apps entfernt." -ForegroundColor Green
+
+
+Write-Host "4. Erstelle komprimiertes WIM-Image von C: auf dem Ventoy-Stick..." -ForegroundColor Cyan
 
 # WICHTIG: Passe D:\ an den echten Laufwerksbuchstaben deines Ventoy-Sticks an!
 $usbBackupPath = "D:\windows_backup.wim"
 
-# DISM packt das System maximal komprimiert auf den Stick
 dism /Capture-Image /ImageFile:$usbBackupPath /CaptureDir:C:\ /Name:"Windows abgespeckt Backup" /Compress:max /EA
 
-Write-Host "Fertig! Das Backup liegt jetzt auf deinem Ventoy-Stick." -ForegroundColor Green
+Write-Host "Fertig! Das Backup liegt jetzt sicher auf deinem Ventoy-Stick." -ForegroundColor Green
 Pause
