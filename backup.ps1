@@ -82,20 +82,11 @@ if (Test-Path $backupFilePath) {
 
 dism /Capture-Image /ImageFile:$backupFilePath /CaptureDir:C:\ /Name:"Windows abgespeckt Backup" /Compress:max /EA
 
-# WICHTIG: Kurze Pause, damit Windows die Datei nach dem Schreiben komplett freigibt
-Write-Host "Warte kurz, bis Windows die Datei freigibt..." -ForegroundColor DarkCyan
-Start-Sleep -Seconds 3
-
-
-Write-Host "5. Führe Integritäts-Check des Backups durch..." -ForegroundColor Cyan
-
-$verifyResult = dism /Verify-Image /ImageFile:$backupFilePath /Index:1
-
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "-> ERFOLG: Das Backup auf dem Desktop ist zu 100% intakt und fehlerfrei!" -ForegroundColor Green
-    Write-Host "Das Backup ist sicher auf deinem Desktop hinterlegt. Es wurde nichts gelöscht." -ForegroundColor Cyan
+    Write-Host "-> ERFOLG: Das Backup wurde fehlerfrei auf deinem Desktop erstellt!" -ForegroundColor Green
+    Write-Host "Die Datei 'windows_backup.wim' ist da. Es wurde absolut nichts gelöscht." -ForegroundColor Cyan
 } else {
-    Write-Host "-> FEHLER: Das Backup weist Unstimmigkeiten auf!" -ForegroundColor Red
+    Write-Host "-> FEHLER beim Erstellen des Backups!" -ForegroundColor Red
 }
 
 Pause
